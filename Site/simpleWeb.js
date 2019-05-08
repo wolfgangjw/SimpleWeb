@@ -1,11 +1,14 @@
 ; (function ($) {
 	var defaultSetting = {
-		'srcFolder': 'src/',
+		'pageFolder': 'src/pages/',
+		'pageExt': '.json',
 		'apiRoot': ''
 	};
 	var setting = {};
 
-	var src = {};
+	var src = {
+		pages: {}
+	};
 	var pageDataElement = {};
 	var pageElementData = {};
 	var runningMonitor = {
@@ -33,53 +36,79 @@
 			setting = $.extend({}, defaultSetting, option);
 		},
 		init: function () {
-			var page;
 			var paras = privateMethods.getHrefParameters();
-			if (paras.length === 0) {
-				page = 'Index'
-			}
-			else {
-				page = paras[0];
-			}
-			publicMethods.getHtml(page);
-		},
-		getHtml: function (path) {
-			if (htmlSrc[path]) {
-
-			}
-			else {
-				privateMethods.loadStatic(path);
-			}
+			privateMethods.getPage(paras[0]);
 		}
 	};
 
 	var privateMethods = {
 		getHrefParameters: function () {
 			var href = $(location).attr("href");
-			return href.split('?')[1].split('/');
+			var hrefs = href.split('?');
+			if (hrefs.length < 2) {
+				return ['Index'];
+			}
+			hrefs = hrefs[1].split('/');
+			var paras = [];
+			for (var i = 0; i < hrefs.length; i++) {
+				if (hrefs[i].trim().length > 0) {
+					paras.push(hrefs[i]);
+				}
+			}
+			if (paras.length === 0) {
+				return ['Index'];
+			}
+			return paras;
 		},
+		getUrlFromPath: function (path, prefix, postfix) {
+			var url = prefix;
+			var paths = path.split('.');
+			for (var i = 0; i < paths.length; i++) {
+				if (!(/^[A-Z]+$/.test(paths[i].charAt(0)))) {
+					break;
+				}
+				url = url + '/' + paths[i].charAt(0).toLowerCase() + paths[i].substr(1);
+			}
+			return url + postfix;
+		},
+		getData: function (url) { },//TODO
+		getPage: function (path) {
+			if (src.pages[path]) {
+				return src.pages[path];
+			}
+			var url = privateMethods.getUrlFromPath(path, setting.pageFolder, setting.pageExt);
+			privateMethods.loadStatic(url, function (ret) {
+				src.pages[path] = ret;
+			}, function () {
+			});
+		},//DOING
 		getSrc: function (path) {
-			privateMethods.loadStatic(path);
-		},
-		loadStatic: function (path) {
+			if (src[path] != null) {
+				return src[path];
+			}
+			return privateMethods.loadStatic(path);
+		},//TODO
+		loadStatic: function (url, sucMethod, errMethod) {
 			privateMethods.startLoad();
 			$.ajax({
-				url: path,
+				url: url,
 				type: 'GET',
 				success: function (ret) {
+					sucMethod.call(null, ret);
 					privateMethods.endLoad();
 				},
 				error: function () {
+					errMethod.call();
 					privateMethods.endLoad();
-					$.error('URL ' + path + ' could not be load.');
+					$.error('URL ' + url + ' could not be load.');
 				}
 			})
-		},
+		},//TODO
 		startLoad: function () {
 			runningMonitor.currentLoading++;
-		},
+		},//TODO
 		endLoad: function () {
 			runningMonitor.currentLoading--;
-		}
+		}//TODO
 	};
 })(jQuery);
