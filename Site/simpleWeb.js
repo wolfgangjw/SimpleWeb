@@ -37,7 +37,7 @@
 		},
 		init: function () {
 			var paras = privateMethods.getHrefParameters();
-			privateMethods.getPage(paras[0]);
+			privateMethods.setPage(paras[0], $('body'));
 		}
 	};
 
@@ -67,43 +67,43 @@
 				if (!(/^[A-Z]+$/.test(paths[i].charAt(0)))) {
 					break;
 				}
-				url = url + '/' + paths[i].charAt(0).toLowerCase() + paths[i].substr(1);
+				url = url + paths[i].charAt(0).toLowerCase() + paths[i].substr(1);
 			}
 			return url + postfix;
 		},
-		getData: function (url) { },//TODO
-		getPage: function (path) {
-			if (src.pages[path]) {
-				return src.pages[path];
-			}
-			var url = privateMethods.getUrlFromPath(path, setting.pageFolder, setting.pageExt);
-			privateMethods.loadStatic(url, function (ret) {
-				src.pages[path] = ret;
-			}, function () {
-			});
-		},//DOING
-		getSrc: function (path) {
-			if (src[path] != null) {
-				return src[path];
-			}
-			return privateMethods.loadStatic(path);
-		},//TODO
-		loadStatic: function (url, sucMethod, errMethod) {
+		load: function (url, type, sucMethod, errMethod) {
 			privateMethods.startLoad();
 			$.ajax({
 				url: url,
-				type: 'GET',
+				type: type,
 				success: function (ret) {
-					sucMethod.call(null, ret);
 					privateMethods.endLoad();
+					sucMethod.call(null, ret);
 				},
 				error: function () {
-					errMethod.call();
 					privateMethods.endLoad();
+					errMethod.call();
 					$.error('URL ' + url + ' could not be load.');
 				}
 			})
-		},//TODO
+		},
+		explodePage: function (json) {
+			for (var i = 0; i < json.elements.length; i++) {
+
+			}
+		},//DOING
+		setPage: function (path, ele) {
+			if (src.pages[path]) {
+				ele.text(src.pages[path].test);//REMOVE
+			}
+			var url = privateMethods.getUrlFromPath(path, setting.pageFolder, setting.pageExt);
+			privateMethods.load(url, 'GET', function (ret) {
+				src.pages[path] = ret;
+
+				ele.text(src.pages[path].test);//REMOVE
+			}, function () { });
+		},//DOING
+		getData: function (url) { },//TODO
 		startLoad: function () {
 			runningMonitor.currentLoading++;
 		},//TODO
