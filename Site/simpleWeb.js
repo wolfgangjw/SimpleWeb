@@ -2,6 +2,7 @@
 	var defaultSetting = {
 		'pageFolder': 'src/pages/',
 		'pageExt': '.json',
+		'controllerExt': '.html',
 		'apiRoot': ''
 	};
 	var setting = {};
@@ -37,7 +38,10 @@
 		},
 		init: function () {
 			var paras = privateMethods.getHrefParameters();
-			privateMethods.setPage(paras[0], $('body'));
+			privateMethods.getPage(paras[0], function (page) {
+				var paths = new Set();
+				privateMethods.getSourcePathOfPage(page, paths);
+			});
 		}
 	};
 
@@ -78,7 +82,9 @@
 				type: type,
 				success: function (ret) {
 					privateMethods.endLoad();
-					sucMethod.call(null, ret);
+					if (runningMonitor.currentLoading === 0) {
+						sucMethod.call(null, ret);
+					}
 				},
 				error: function () {
 					privateMethods.endLoad();
@@ -87,20 +93,35 @@
 				}
 			})
 		},
-		explodePage: function (json) {
-			for (var i = 0; i < json.elements.length; i++) {
-
+		getSourcePathOfPage: function (page, paths) {
+			switch (page.data.type) {
+				case 'elements':
+					for (var i = 0; i < page.elements.length; i++) {
+						privateMethods.getSourcePathOfPage(page.elements[i], paths);
+					}
+					break;
+				case 'static':
+					paths.add(page.controller);
+					break;
+				case 'dynamic':
+					paths.add(page.controller);
+					break;
+				default:
+					$.error('Data type is not supported.');
 			}
-		},//DOING
-		setPage: function (path, ele) {
+			if (page.data.url) {
+				paths.add(page.data.url);
+			}
+			return paths;
+		},
+		getPage: function (path, callbackAfter) {
 			if (src.pages[path]) {
-				ele.text(src.pages[path].test);//REMOVE
+				callbackAfter.call(null, src.pages[path]);
 			}
 			var url = privateMethods.getUrlFromPath(path, setting.pageFolder, setting.pageExt);
 			privateMethods.load(url, 'GET', function (ret) {
 				src.pages[path] = ret;
-
-				ele.text(src.pages[path].test);//REMOVE
+				callbackAfter.call(null, ret);
 			}, function () { });
 		},//DOING
 		getData: function (url) { },//TODO
